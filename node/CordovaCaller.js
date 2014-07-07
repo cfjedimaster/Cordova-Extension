@@ -36,6 +36,33 @@
 
     }
 
+    function getPlugins(directory,cb) {
+    	exec("echo 'cordova plugins' | bash --login", {cwd:directory}, function(error, stdout, stderror) {
+    		if(stdout && stdout != "") {
+    			console.log("raw stdout ", stdout);
+    			var lines = stdout.split("\n");
+    			var plugins = [];
+    			for(var i=0;i<lines.length;i++) {
+    				//handle blank links
+    				if(lines[i] != "") {
+	    				var parts = lines[i].split(" ");
+	    				var id = parts.shift();
+	    				var version = parts.shift();
+	    				var name = parts.join(" ");
+	    				name = name.replace(/"/g, "");
+	    				plugins.push({name:name, version:version, id:id});
+	    			}
+    			}
+    			console.log(plugins);
+    			cb(undefined, plugins);
+    		}
+
+    		//TBD - handle errors
+    		//console.log("stderror",stderror);
+
+    	});
+
+    }
     function enablePlatform(directory,platform, enable, cb) {
     	console.log('i was passed '+directory+','+platform+', '+enable);
     	/*
@@ -129,6 +156,14 @@
             "Gets platforms. What else?",
             [{name:"directory", type:"string", description:"Directory of project"}]
         );
+        domainManager.registerCommand(
+            "cordovacaller",       // domain name
+            "getPlugins",    // command name
+            getPlugins,   // command handler function
+            true,          // this command is asynchronous in Node
+            "Gets plugins. What else?",
+            [{name:"directory", type:"string", description:"Directory of project"}]
+        );        
         domainManager.registerCommand(
             "cordovacaller",       // domain name
             "enablePlatform",    // command name

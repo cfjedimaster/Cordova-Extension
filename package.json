@@ -1,0 +1,14 @@
+{
+    "name": "camden.cordova",
+    "title": "Cordova Extension",
+    "description": "Adds Cordova CLI support to Brackets.",
+    "homepage": "https://github.com/cfjedimaster/Cordova-Extension/",
+    "keywords":["cordova","phonegap"],
+    "categories":"cordova",
+    "version": "0.0.1",
+    "author": "Raymond Camden <raymondcamden@gmail.com> (http://www.raymondcamden.com)",
+    "license": "MIT",
+    "engines": {
+        "brackets": ">=0.40.0"
+    }
+}

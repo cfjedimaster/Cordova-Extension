@@ -25,8 +25,62 @@ define(function (require, exports, module) {
 		var $tab = $("#cordova-plugins-tab");
 		$tab.html("<i>Loading data...</i>");
 
-//				var pTemplate = Mustache.render(platformsTemplate, {platforms:platformsUnified});
-//				$tab.html(pTemplate);
+		cordovaDomain.exec("getPlugins",projectPath)
+            .done(function (plugins) {
+                console.dir(plugins);
+
+				var pTemplate = Mustache.render(pluginsTemplate, {plugins:plugins});
+				$tab.html(pTemplate);
+
+				//Enables/Disables platforms
+				$tab.find(".enablePlatform").on("click", function(e) {
+					var platform = $(this).data("platform");
+					var enabled = $(this).data("enabled");
+					var enable = true;
+					var link = $(this);
+					if(enabled) enable = false;
+					console.log(platform,enable);
+
+					cordovaDomain.exec("enablePlatform", projectPath, platform, enable)
+					.done(function(result) {
+						if(enable) { link.text("true"); link.data("enabled", true); }
+						else { link.text("false"); link.data("enabled", false); };
+
+					}).fail(function (err) {
+						console.log("[cordova] Error", err);
+					});
+
+				});
+
+				//Emulate platforms
+				$tab.find(".emulatePlatform").on("click", function(e) {
+					var platform = $(this).data("platform");
+
+					cordovaDomain.exec("emulatePlatform", projectPath, platform)
+					.done(function(result) {
+						//Nothing for now - maybe auto dismiss?
+					}).fail(function (err) {
+						console.log("[cordova] Error", err);
+					});
+
+				});
+
+				//Run platforms
+				$tab.find(".runPlatform").on("click", function(e) {
+					var platform = $(this).data("platform");
+
+					cordovaDomain.exec("runPlatform", projectPath, platform)
+					.done(function(result) {
+						//Nothing for now - maybe auto dismiss?
+					}).fail(function (err) {
+						console.log("[cordova] Error", err);
+					});
+
+				});
+
+            }).fail(function (err) {
+                console.log("[cordova] Error", err);
+            });
 
     }
 

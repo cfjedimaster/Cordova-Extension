@@ -1,1 +1,17 @@
-TBD - Plugins search
+<input type="search" placeholder="Search for plugin">
+<table class="table table-striped row-highlight table-condensed">
+	<thead>
+		<tr>
+			<td>Plugin</td>
+			<td>Version</td>
+			<td>Options</td>
+		</tr>
+	</thead>
+    {{#plugins}}
+        <tr>
+            <td>{{name}} ({{id}})</td>
+            <td>{{version}}</td>
+            <td><a class="removePlugin" data-plugin"{{name}}">Remove</a></td>
+        </tr>
+    {{/plugins}}
+</table>
