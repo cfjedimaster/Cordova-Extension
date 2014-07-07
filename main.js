@@ -16,12 +16,85 @@ define(function (require, exports, module) {
     	projectPath,
     	compiledTemplate = "",
     	platformsTemplate = require("text!templates/platforms.html"),
+    	pluginsTemplate = require("text!templates/plugins.html"),
 		cordovaPanelTemplate = require("text!templates/cordova_root.html");
 
     var cordovaDomain = new NodeDomain("cordovacaller", ExtensionUtils.getModulePath(module, "node/CordovaCaller"));
 
-    function _doPlatforms() {
+    function _doPlugins() {
+		var $tab = $("#cordova-plugins-tab");
+		$tab.html("<i>Loading data...</i>");
 
+//				var pTemplate = Mustache.render(platformsTemplate, {platforms:platformsUnified});
+//				$tab.html(pTemplate);
+
+    }
+
+    function _doPlatforms() {
+		var $tab = $("#cordova-platforms-tab");
+		$tab.html("<i>Loading data...</i>");
+		cordovaDomain.exec("getPlatforms",projectPath)
+            .done(function (platforms) {
+                console.dir(platforms);
+                var platformsUnified = [];
+                for(var i=0; i<platforms.installed.length; i++) {
+                	platformsUnified.push({name:platforms.installed[i], enabled:true});
+                }
+                for(var i=0; i<platforms.available.length; i++) {
+                	platformsUnified.push({name:platforms.available[i], enabled:false});
+                }
+				var pTemplate = Mustache.render(platformsTemplate, {platforms:platformsUnified});
+				$tab.html(pTemplate);
+
+				//Enables/Disables platforms
+				$tab.find(".enablePlatform").on("click", function(e) {
+					var platform = $(this).data("platform");
+					var enabled = $(this).data("enabled");
+					var enable = true;
+					var link = $(this);
+					if(enabled) enable = false;
+					console.log(platform,enable);
+
+					cordovaDomain.exec("enablePlatform", projectPath, platform, enable)
+					.done(function(result) {
+						if(enable) { link.text("true"); link.data("enabled", true); }
+						else { link.text("false"); link.data("enabled", false); };
+
+					}).fail(function (err) {
+						console.log("[cordova] Error", err);
+					});
+
+				});
+
+				//Emulate platforms
+				$tab.find(".emulatePlatform").on("click", function(e) {
+					var platform = $(this).data("platform");
+
+					cordovaDomain.exec("emulatePlatform", projectPath, platform)
+					.done(function(result) {
+						//Nothing for now - maybe auto dismiss?
+					}).fail(function (err) {
+						console.log("[cordova] Error", err);
+					});
+
+				});
+
+				//Run platforms
+				$tab.find(".runPlatform").on("click", function(e) {
+					var platform = $(this).data("platform");
+
+					cordovaDomain.exec("runPlatform", projectPath, platform)
+					.done(function(result) {
+						//Nothing for now - maybe auto dismiss?
+					}).fail(function (err) {
+						console.log("[cordova] Error", err);
+					});
+
+				});
+
+            }).fail(function (err) {
+                console.log("[cordova] Error", err);
+            });
     }
 
     function _launchCordovaPanel() {
@@ -40,72 +113,13 @@ define(function (require, exports, module) {
 			$panel.find('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
 				var type = $(e.target).data("load");
 				console.log("do tab "+type);
+				if(type === "platforms") _doPlatforms();
+				else _doPlugins();
 			});
 
         	panel.show();
+        	//TBD - remember the last one you selected
 			$panel.find('.nav-tabs a:first').tab('show');
-
-			cordovaDomain.exec("getPlatforms",projectPath)
-	            .done(function (platforms) {
-	                console.dir(platforms);
-	                var platformsUnified = [];
-	                for(var i=0; i<platforms.installed.length; i++) {
-	                	platformsUnified.push({name:platforms.installed[i], enabled:true});
-	                }
-	                for(var i=0; i<platforms.available.length; i++) {
-	                	platformsUnified.push({name:platforms.available[i], enabled:false});
-	                }
-					var pTemplate = Mustache.render(platformsTemplate, {platforms:platformsUnified});
-					//$panel.find(".tab-content").html(pTemplate);
-					//Enables/Disables platforms
-					$panel.find(".tab-content .enablePlatform").on("click", function(e) {
-						var platform = $(this).data("platform");
-						var enabled = $(this).data("enabled");
-						var enable = true;
-						var link = $(this);
-						if(enabled) enable = false;
-						console.log(platform,enable);
-
-						cordovaDomain.exec("enablePlatform", projectPath, platform, enable)
-						.done(function(result) {
-							if(enable) { link.text("true"); link.data("enabled", true); }
-							else { link.text("false"); link.data("enabled", false); };
-
-						}).fail(function (err) {
-							console.log("[cordova] Error", err);
-						});
-
-					});
-
-					//Emulate platforms
-					$panel.find(".tab-content .emulatePlatform").on("click", function(e) {
-						var platform = $(this).data("platform");
-
-						cordovaDomain.exec("emulatePlatform", projectPath, platform)
-						.done(function(result) {
-							//Nothing for now - maybe auto dismiss?
-						}).fail(function (err) {
-							console.log("[cordova] Error", err);
-						});
-
-					});
-
-					//Run platforms
-					$panel.find(".tab-content .runPlatform").on("click", function(e) {
-						var platform = $(this).data("platform");
-
-						cordovaDomain.exec("runPlatform", projectPath, platform)
-						.done(function(result) {
-							//Nothing for now - maybe auto dismiss?
-						}).fail(function (err) {
-							console.log("[cordova] Error", err);
-						});
-
-					});
-
-	            }).fail(function (err) {
-	                console.log("[cordova] Error", err);
-	            });
 
         } else {
         	panel.hide();
