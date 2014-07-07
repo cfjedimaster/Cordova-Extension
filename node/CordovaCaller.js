@@ -65,7 +65,30 @@
     	});
 
     }
-    
+
+    function emulatePlatform(directory,platform, cb) {
+    	/*
+    	platforms look like name version, im going to let them keep looking 
+    	like that as i think it useful for the front end, so we'll hide em back here
+    	*/
+    	platform = platform.split(" ")[0];
+
+    	var cmd = "echo 'cordova emulate "+platform+"' | bash --login";
+    	console.log(cmd);
+    	exec(cmd, {cwd:directory}, function(error, stdout, stderror) {
+    		/*
+			stdout for emulate isn't really helpful, and rm gives nothing, so...
+			I'll probably regret this in the morning.
+    		*/
+   			var result = 1;
+   			cb(undefined, {result:result});
+
+    		//TBD - handle errors
+    		if(stderror != "") console.log("stderror",stderror);
+
+    	});
+
+    }    
     /**
      * Initializes the test domain with several test commands.
      * @param {DomainManager} domainManager The DomainManager for the server
@@ -93,7 +116,16 @@
             {name:"enable", type:"boolean", description:"Either add or remove a platform"},
             ]
         );
-    }
+        domainManager.registerCommand(
+            "cordovacaller",       // domain name
+            "emulatePlatform",    // command name
+            emulatePlatform,   // command handler function
+            true,          // this command is asynchronous in Node
+            "Emulates a platform",
+            [{name:"directory", type:"string", description:"Directory of project"},
+            {name:"platform", type:"string", description:"Platform"}
+            ]
+        );    }
     
     exports.init = init;
     

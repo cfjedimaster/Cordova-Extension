@@ -40,6 +40,7 @@ define(function (require, exports, module) {
 				var pTemplate = Mustache.render(platformsTemplate, {platforms:platformsUnified});
 				$dialog.find(".tab-content").html(pTemplate);
 
+				//Enables/Disables platforms
 				$dialog.find(".tab-content .enablePlatform").on("click", function(e) {
 					var platform = $(this).data("platform");
 					var enabled = $(this).data("enabled");
@@ -53,6 +54,20 @@ define(function (require, exports, module) {
 						if(enable) { link.text("true"); link.data("enabled", true); }
 						else { link.text("false"); link.data("enabled", false); };
 
+					}).fail(function (err) {
+						console.log("[cordova] Error", err);
+					});
+
+				});
+
+				//Enables/Disables platforms
+				$dialog.find(".tab-content .emulatePlatform").on("click", function(e) {
+					var platform = $(this).data("platform");
+					console.log(platform);
+
+					cordovaDomain.exec("emulatePlatform", projectPath, platform)
+					.done(function(result) {
+						//Nothing for now - maybe auto dismiss?
 					}).fail(function (err) {
 						console.log("[cordova] Error", err);
 					});
