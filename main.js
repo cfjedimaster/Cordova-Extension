@@ -3,84 +3,95 @@ define(function (require, exports, module) {
     "use strict";
 
     var AppInit             = brackets.getModule("utils/AppInit"),
-        NodeDomain        = brackets.getModule("utils/NodeDomain"),    
+        NodeDomain          = brackets.getModule("utils/NodeDomain"),    
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         Dialogs             = brackets.getModule("widgets/Dialogs"),
+        PanelManager        = brackets.getModule("view/PanelManager"),
         ProjectManager		= brackets.getModule("project/ProjectManager");
 
 
     var $icon,
     	isCordovaProject,
-    	dialog,
+    	panel,
     	projectPath,
     	compiledTemplate = "",
     	platformsTemplate = require("text!templates/platforms.html"),
-		cordovaDialogTemplate = require("text!templates/cordova_root.html");
+		cordovaPanelTemplate = require("text!templates/cordova_root.html");
 
     var cordovaDomain = new NodeDomain("cordovacaller", ExtensionUtils.getModulePath(module, "node/CordovaCaller"));
 
-    function _launchCordovaDialog() {
+    function _launchCordovaPanel() {
     	if(!isCordovaProject) return;
-    	if(compiledTemplate === "") compiledTemplate = Mustache.render(cordovaDialogTemplate, {});
-		dialog = Dialogs.showModalDialogUsingTemplate(compiledTemplate);
-		var $dialog = dialog.getElement();
-		$dialog.find(".nav-tabs a:first").tab("show");
 
-		cordovaDomain.exec("getPlatforms",projectPath)
-            .done(function (platforms) {
-                console.log("[cordova] Done with no errors.");
-                console.dir(platforms);
-                var platformsUnified = [];
-                for(var i=0; i<platforms.installed.length; i++) {
-                	platformsUnified.push({name:platforms.installed[i], enabled:true});
-                }
-                for(var i=0; i<platforms.available.length; i++) {
-                	platformsUnified.push({name:platforms.available[i], enabled:false});
-                }
-				var pTemplate = Mustache.render(platformsTemplate, {platforms:platformsUnified});
-				$dialog.find(".tab-content").html(pTemplate);
+        var $panel = $("#cordova-root-panel");
+        
+        if ($panel.length == 0 || $panel.css("display") === "none") {
 
-				//Enables/Disables platforms
-				$dialog.find(".tab-content .enablePlatform").on("click", function(e) {
-					var platform = $(this).data("platform");
-					var enabled = $(this).data("enabled");
-					var enable = true;
-					var link = $(this);
-					if(enabled) enable = false;
-					console.log(platform,enable);
+        	if($panel.length == 0) {
+		    	if(compiledTemplate === "") $panel = $(Mustache.render(cordovaPanelTemplate, {}));
+                panel = PanelManager.createBottomPanel("cordova-root-panel", $panel);
+        	}
 
-					cordovaDomain.exec("enablePlatform", projectPath, platform, enable)
-					.done(function(result) {
-						if(enable) { link.text("true"); link.data("enabled", true); }
-						else { link.text("false"); link.data("enabled", false); };
+        	panel.show();
+			$panel.find(".nav-tabs a:first").tab("show");
 
-					}).fail(function (err) {
-						console.log("[cordova] Error", err);
+			cordovaDomain.exec("getPlatforms",projectPath)
+	            .done(function (platforms) {
+	                console.dir(platforms);
+	                var platformsUnified = [];
+	                for(var i=0; i<platforms.installed.length; i++) {
+	                	platformsUnified.push({name:platforms.installed[i], enabled:true});
+	                }
+	                for(var i=0; i<platforms.available.length; i++) {
+	                	platformsUnified.push({name:platforms.available[i], enabled:false});
+	                }
+					var pTemplate = Mustache.render(platformsTemplate, {platforms:platformsUnified});
+					$panel.find(".tab-content").html(pTemplate);
+
+					//Enables/Disables platforms
+					$panel.find(".tab-content .enablePlatform").on("click", function(e) {
+						var platform = $(this).data("platform");
+						var enabled = $(this).data("enabled");
+						var enable = true;
+						var link = $(this);
+						if(enabled) enable = false;
+						console.log(platform,enable);
+
+						cordovaDomain.exec("enablePlatform", projectPath, platform, enable)
+						.done(function(result) {
+							if(enable) { link.text("true"); link.data("enabled", true); }
+							else { link.text("false"); link.data("enabled", false); };
+
+						}).fail(function (err) {
+							console.log("[cordova] Error", err);
+						});
+
 					});
 
-				});
+					//Enables/Disables platforms
+					$panel.find(".tab-content .emulatePlatform").on("click", function(e) {
+						var platform = $(this).data("platform");
+						console.log(platform);
 
-				//Enables/Disables platforms
-				$dialog.find(".tab-content .emulatePlatform").on("click", function(e) {
-					var platform = $(this).data("platform");
-					console.log(platform);
+						cordovaDomain.exec("emulatePlatform", projectPath, platform)
+						.done(function(result) {
+							//Nothing for now - maybe auto dismiss?
+						}).fail(function (err) {
+							console.log("[cordova] Error", err);
+						});
 
-					cordovaDomain.exec("emulatePlatform", projectPath, platform)
-					.done(function(result) {
-						//Nothing for now - maybe auto dismiss?
-					}).fail(function (err) {
-						console.log("[cordova] Error", err);
 					});
 
-				});
+	            }).fail(function (err) {
+	                console.log("[cordova] Error", err);
+	            });
 
-            }).fail(function (err) {
-                console.log("[cordova] Error", err);
-            });
+        } else {
+        	panel.hide();
+        }
     }
 
     function _checkForCordovaProject() {
-    	console.log("is this project a cordova project?");
     	var root = ProjectManager.getProjectRoot();
     	projectPath = root.fullPath;
     	$icon.removeClass("active").attr({title:"Not a Cordova Project"});
@@ -88,7 +99,6 @@ define(function (require, exports, module) {
     	root.getContents(function(err,entries) {
     		entries.forEach(function(entry) {
     			if(entry.isDirectory && entry.name === ".cordova") {
-    				console.log("yes, it is cordova");
 			    	$icon.addClass("active").attr({title:"Cordova Project"});
 			    	isCordovaProject = true;
     			}
@@ -104,7 +114,7 @@ define(function (require, exports, module) {
             id: "cordova-setup-icon",
             href: "#"
         })
-        .click(_launchCordovaDialog)
+        .click(_launchCordovaPanel)
         .appendTo($("#main-toolbar .buttons"));
 
 
