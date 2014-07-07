@@ -20,6 +20,10 @@ define(function (require, exports, module) {
 
     var cordovaDomain = new NodeDomain("cordovacaller", ExtensionUtils.getModulePath(module, "node/CordovaCaller"));
 
+    function _doPlatforms() {
+
+    }
+
     function _launchCordovaPanel() {
     	if(!isCordovaProject) return;
 
@@ -32,8 +36,14 @@ define(function (require, exports, module) {
                 panel = PanelManager.createBottomPanel("cordova-root-panel", $panel);
         	}
 
+
+			$panel.find('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+				var type = $(e.target).data("load");
+				console.log("do tab "+type);
+			});
+
         	panel.show();
-			$panel.find(".nav-tabs a:first").tab("show");
+			$panel.find('.nav-tabs a:first').tab('show');
 
 			cordovaDomain.exec("getPlatforms",projectPath)
 	            .done(function (platforms) {
@@ -46,8 +56,7 @@ define(function (require, exports, module) {
 	                	platformsUnified.push({name:platforms.available[i], enabled:false});
 	                }
 					var pTemplate = Mustache.render(platformsTemplate, {platforms:platformsUnified});
-					$panel.find(".tab-content").html(pTemplate);
-
+					//$panel.find(".tab-content").html(pTemplate);
 					//Enables/Disables platforms
 					$panel.find(".tab-content .enablePlatform").on("click", function(e) {
 						var platform = $(this).data("platform");
@@ -68,12 +77,24 @@ define(function (require, exports, module) {
 
 					});
 
-					//Enables/Disables platforms
+					//Emulate platforms
 					$panel.find(".tab-content .emulatePlatform").on("click", function(e) {
 						var platform = $(this).data("platform");
-						console.log(platform);
 
 						cordovaDomain.exec("emulatePlatform", projectPath, platform)
+						.done(function(result) {
+							//Nothing for now - maybe auto dismiss?
+						}).fail(function (err) {
+							console.log("[cordova] Error", err);
+						});
+
+					});
+
+					//Run platforms
+					$panel.find(".tab-content .runPlatform").on("click", function(e) {
+						var platform = $(this).data("platform");
+
+						cordovaDomain.exec("runPlatform", projectPath, platform)
 						.done(function(result) {
 							//Nothing for now - maybe auto dismiss?
 						}).fail(function (err) {
