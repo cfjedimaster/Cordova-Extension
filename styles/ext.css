@@ -1,0 +1,7 @@
+#cordova-setup-icon {
+    background-image: url(images/cordova_24_bw.png);
+}
+
+#cordova-setup-icon.active {
+    background-image: url(images/cordova_24.png);
+}

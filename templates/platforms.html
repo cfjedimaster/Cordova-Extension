@@ -1,0 +1,18 @@
+<h3>Platforms</h3>
+
+<table class="table table-striped row-highlight table-condensed">
+	<thead>
+		<tr>
+			<td>Platform</td>
+			<td>Installed</td>
+			<td>Build Options</td>
+		</tr>
+	</thead>
+    {{#platforms}}
+        <tr>
+            <td>{{name}}</td>
+            <td><a class="enablePlatform" data-platform="{{name}}" data-enabled="{{enabled}}">{{enabled}}</a></td>
+            <td>Em / Run</td>
+        </tr>
+    {{/platforms}}
+</table>
