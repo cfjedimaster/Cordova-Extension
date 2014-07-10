@@ -12,6 +12,29 @@
     var exec = require('child_process').exec;
     var spawn = require('child_process').spawn;
 
+    function addPlugin(directory,plugin, cb) {
+        console.log('i was passed '+directory+','+plugin);
+
+
+        var cmd = "echo 'cordova plugin add "+plugin+"' | bash --login";
+        console.log(cmd);
+        exec(cmd, {cwd:directory}, function(error, stdout, stderror) {
+
+            //TBD - handle errors
+            if(stderror != "") {
+                console.log("stderror",stderror);
+                if(stderror.indexOf("Failed to fetch") >= 0) {
+                    cb(undefined, {result:-1});
+                }
+            } else {
+                console.log(stdout);
+                var result = 1;
+                cb(undefined, {result:result});
+            }
+        });
+
+    }
+
     function getPlatforms(directory,cb) {
     	console.log('i was passed '+directory);
     	exec("echo 'cordova platforms' | bash --login", {cwd:directory}, function(error, stdout, stderror) {
@@ -63,6 +86,7 @@
     	});
 
     }
+
     function enablePlatform(directory,platform, enable, cb) {
     	console.log('i was passed '+directory+','+platform+', '+enable);
     	/*
@@ -117,6 +141,32 @@
 
     } 
 
+    function removePlugin(directory,plugin, cb) {
+        console.log('i was passed '+directory+','+plugin);
+
+
+        var cmd = "echo 'cordova plugin rm "+plugin+"' | bash --login";
+        console.log(cmd);
+        exec(cmd, {cwd:directory}, function(error, stdout, stderror) {
+
+            //TBD - handle errors
+            if(stderror != "") {
+                console.log("stderror",stderror);
+                
+                if(stderror.indexOf("is required by") >= 0) {
+                    /* tbd - parse the exception to get the required plugin
+                    cb(undefined, {result:-1});
+                    */
+                }
+                
+            } else {
+                console.log(stdout);
+                var result = 1;
+                cb(undefined, {result:result});
+            }
+        });
+
+    }
     function runPlatform(directory,platform, cb) {
     	/*
     	platforms look like name version, im going to let them keep looking 
@@ -157,18 +207,18 @@
             [{name:"directory", type:"string", description:"Directory of project"}]
         );
         domainManager.registerCommand(
-            "cordovacaller",       // domain name
-            "getPlugins",    // command name
-            getPlugins,   // command handler function
-            true,          // this command is asynchronous in Node
+            "cordovacaller",
+            "getPlugins",
+            getPlugins,
+            true,
             "Gets plugins. What else?",
             [{name:"directory", type:"string", description:"Directory of project"}]
         );        
         domainManager.registerCommand(
-            "cordovacaller",       // domain name
-            "enablePlatform",    // command name
-            enablePlatform,   // command handler function
-            true,          // this command is asynchronous in Node
+            "cordovacaller",
+            "enablePlatform",
+            enablePlatform,
+            true,
             "Enables/Disables a platform",
             [{name:"directory", type:"string", description:"Directory of project"},
             {name:"platform", type:"string", description:"Platform"},
@@ -176,25 +226,45 @@
             ]
         );
         domainManager.registerCommand(
-            "cordovacaller",       // domain name
-            "emulatePlatform",    // command name
-            emulatePlatform,   // command handler function
-            true,          // this command is asynchronous in Node
+            "cordovacaller",
+            "emulatePlatform",
+            emulatePlatform,
+            true,
             "Emulates a platform",
             [{name:"directory", type:"string", description:"Directory of project"},
             {name:"platform", type:"string", description:"Platform"}
             ]
         );
         domainManager.registerCommand(
-            "cordovacaller",       // domain name
-            "runPlatform",    // command name
-            runPlatform,   // command handler function
-            true,          // this command is asynchronous in Node
+            "cordovacaller",
+            "runPlatform",
+            runPlatform,
+            true,
             "Runs a platform",
             [{name:"directory", type:"string", description:"Directory of project"},
             {name:"platform", type:"string", description:"Platform"}
             ]
-        );           
+        );
+        domainManager.registerCommand(
+            "cordovacaller",
+            "addPlugin",
+            addPlugin,
+            true,
+            "Adds a plugin",
+            [{name:"directory", type:"string", description:"Directory of project"},
+            {name:"plugin", type:"string", description:"Plugin"}
+            ]
+        ); 
+        domainManager.registerCommand(
+            "cordovacaller",
+            "removePlugin",
+            removePlugin,
+            true,
+            "Adds a plugin",
+            [{name:"directory", type:"string", description:"Directory of project"},
+            {name:"plugin", type:"string", description:"Plugin"}
+            ]
+        ); 
     }
     
     exports.init = init;

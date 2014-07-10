@@ -19,7 +19,52 @@ define(function (require, exports, module) {
     	pluginsTemplate = require("text!templates/plugins.html"),
 		cordovaPanelTemplate = require("text!templates/cordova_root.html");
 
+	//Number of minutes to cache 
+	var CACHE_LEN = 1000*60*60;
+	//cached plugin data
+	var pluginData;
+
     var cordovaDomain = new NodeDomain("cordovacaller", ExtensionUtils.getModulePath(module, "node/CordovaCaller"));
+
+    //Credit: http://stackoverflow.com/a/8330107/52160
+	function ucFirstAllWords( str )
+	{
+	    var pieces = str.split(" ");
+	    for ( var i = 0; i < pieces.length; i++ )
+	    {
+	        var j = pieces[i].charAt(0).toUpperCase();
+	        pieces[i] = j + pieces[i].substr(1);
+	    }
+	    return pieces.join(" ");
+	}
+
+    function _initPluginData() {
+    	/*
+		I'm used to download and prepare the data for plugin searching.
+		When I'm done I'll enable the search field.
+
+		This URL, http://registry.cordova.io/-/all, contans a JSON packet of everything.
+		We'll get it and cache it for at least one hour.
+    	*/
+    	var cacheKey = "camden.cordova.plugindata";
+    	if(localStorage[cacheKey]) {
+    		var cachedData = JSON.parse(localStorage[cacheKey]);
+    		var then = new Date(cachedData.created);
+			var now = new Date();
+			if((now.getTime() - then.getTime()) < CACHE_LEN) {
+				pluginData = cachedData.data;
+				$("#cordova-plugin-search").removeAttr("disabled");
+				return;
+			}
+    	}
+
+    	$.getJSON("http://registry.cordova.io/-/all", function(res) {
+    		localStorage[cacheKey] = JSON.stringify({ data:res, created:new Date()});
+    		pluginData = res;
+			$("#cordova-plugin-search").removeAttr("disabled");
+    	});
+
+    }
 
     function _doPlugins() {
 		var $tab = $("#cordova-plugins-tab");
@@ -27,54 +72,72 @@ define(function (require, exports, module) {
 
 		cordovaDomain.exec("getPlugins",projectPath)
             .done(function (plugins) {
-                console.dir(plugins);
 
 				var pTemplate = Mustache.render(pluginsTemplate, {plugins:plugins});
 				$tab.html(pTemplate);
 
-				//Enables/Disables platforms
-				$tab.find(".enablePlatform").on("click", function(e) {
-					var platform = $(this).data("platform");
-					var enabled = $(this).data("enabled");
-					var enable = true;
-					var link = $(this);
-					if(enabled) enable = false;
-					console.log(platform,enable);
+				_initPluginData();
 
-					cordovaDomain.exec("enablePlatform", projectPath, platform, enable)
-					.done(function(result) {
-						if(enable) { link.text("true"); link.data("enabled", true); }
-						else { link.text("false"); link.data("enabled", false); };
-
-					}).fail(function (err) {
-						console.log("[cordova] Error", err);
-					});
-
+				$("#cordova-plugin-search").on("input", function(e) {
+					var search = $(this).val();
+					//console.log("search for "+search);
+					//console.dir(pluginData);
 				});
 
-				//Emulate platforms
-				$tab.find(".emulatePlatform").on("click", function(e) {
-					var platform = $(this).data("platform");
+				$("#cordova-plugin-add").on("click", function(e) {
+					var plugin = $("#cordova-plugin-search").val();
+					if(!plugin) return;
+					/*
+					Even though we have support for invalid plugins, let's look to our local data first.
+					*/
+					if(!pluginData[plugin]) {
+						Dialogs.showModalDialog("", "Invalid Plugin", "The plugin you tried to add does not exist.");
+						return;
+					} 
 
-					cordovaDomain.exec("emulatePlatform", projectPath, platform)
-					.done(function(result) {
-						//Nothing for now - maybe auto dismiss?
+					cordovaDomain.exec("addPlugin", projectPath, plugin)
+					.done(function(res) {
+						if(res.result && res.result == -1) {
+							//bad plugin
+							Dialogs.showModalDialog("", "Invalid Plugin", "The plugin you tried to add does not exist.");
+						} else if(res.result == 1) {
+							/*
+							Good plugin. So we need to add it to the list. 
+							Oddly, what you get when you run plugins list in the CLI has a slightly different name.
+							For example, the device plugin is *just* device, but in the data, the description tag is
+							Cordova Device Plugin. It *looks* like they may get the name from the domain, the last portion,
+							and init cap the first letter and change - to space. So... I'll go with that.
+							*/
+							var pluginName = plugin.split(".").pop();
+							pluginName = pluginName.replace(/\-/g, " ");
+							pluginName = ucFirstAllWords(pluginName);
+							pluginName += " ("+plugin+")";
+							var version = pluginData[plugin]["dist-tags"].latest;
+
+							$("#cordova-plugin-table tbody").append("<tr><td>"+pluginName+"</td><td>"+version+"</td><td><a class=\"removePlugin\" data-plugin=\""+plugin+"\">Remove</a></td></tr>");
+							$("#cordova-plugin-search").val("");
+
+						} else {
+							//yeah ive got nothing
+						}
 					}).fail(function (err) {
 						console.log("[cordova] Error", err);
-					});
-
+					});					
 				});
 
-				//Run platforms
-				$tab.find(".runPlatform").on("click", function(e) {
-					var platform = $(this).data("platform");
+				//Remove plugin - TBD
+				$tab.on("click", ".removePlugin", function(e) {
+					var plugin = $(this).data("plugin");
+					var tr = $(this).parent().parent();
+					console.log(plugin);
 
-					cordovaDomain.exec("runPlatform", projectPath, platform)
+					cordovaDomain.exec("removePlugin", projectPath, plugin)
 					.done(function(result) {
-						//Nothing for now - maybe auto dismiss?
+						tr.remove();
 					}).fail(function (err) {
 						console.log("[cordova] Error", err);
 					});
+					
 
 				});
 
@@ -89,7 +152,6 @@ define(function (require, exports, module) {
 		$tab.html("<i>Loading data...</i>");
 		cordovaDomain.exec("getPlatforms",projectPath)
             .done(function (platforms) {
-                console.dir(platforms);
                 var platformsUnified = [];
                 for(var i=0; i<platforms.installed.length; i++) {
                 	platformsUnified.push({name:platforms.installed[i], enabled:true});
