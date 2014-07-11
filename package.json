@@ -5,7 +5,7 @@
     "homepage": "https://github.com/cfjedimaster/Cordova-Extension/",
     "keywords":["cordova","phonegap"],
     "categories":"cordova",
-    "version": "0.0.2",
+    "version": "0.0.5",
     "author": "Raymond Camden <raymondcamden@gmail.com> (http://www.raymondcamden.com)",
     "license": "MIT",
     "engines": {

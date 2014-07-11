@@ -2,6 +2,8 @@
 define(function (require, exports, module) {
     "use strict";
 
+    require("jquery.smart_autocomplete");
+
     var AppInit             = brackets.getModule("utils/AppInit"),
         NodeDomain          = brackets.getModule("utils/NodeDomain"),    
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
@@ -38,6 +40,23 @@ define(function (require, exports, module) {
 	    return pieces.join(" ");
 	}
 
+	/*
+	After we have our plugin data, setup the autocomplete
+	*/
+	function _initAutoComplete() {
+		var options = [];
+		console.dir(pluginData);
+		for(var key in pluginData) {
+			if(key !== '_updated') options.push(key);
+		}
+
+		$("#cordova-plugin-search").removeAttr("disabled").smartAutoComplete({
+			source:options,
+			maxResults:5
+		});
+
+	}
+
     function _initPluginData() {
     	/*
 		I'm used to download and prepare the data for plugin searching.
@@ -53,7 +72,7 @@ define(function (require, exports, module) {
 			var now = new Date();
 			if((now.getTime() - then.getTime()) < CACHE_LEN) {
 				pluginData = cachedData.data;
-				$("#cordova-plugin-search").removeAttr("disabled");
+				_initAutoComplete();
 				return;
 			}
     	}
@@ -61,7 +80,7 @@ define(function (require, exports, module) {
     	$.getJSON("http://registry.cordova.io/-/all", function(res) {
     		localStorage[cacheKey] = JSON.stringify({ data:res, created:new Date()});
     		pluginData = res;
-			$("#cordova-plugin-search").removeAttr("disabled");
+			_initAutoComplete();
     	});
 
     }
@@ -77,12 +96,6 @@ define(function (require, exports, module) {
 				$tab.html(pTemplate);
 
 				_initPluginData();
-
-				$("#cordova-plugin-search").on("input", function(e) {
-					var search = $(this).val();
-					//console.log("search for "+search);
-					//console.dir(pluginData);
-				});
 
 				$("#cordova-plugin-add").on("click", function(e) {
 					var plugin = $("#cordova-plugin-search").val();
@@ -214,7 +227,10 @@ define(function (require, exports, module) {
     }
 
     function _launchCordovaPanel() {
-    	if(!isCordovaProject) return;
+    	if(!isCordovaProject) { 
+        	if(panel) panel.hide();
+    		return;
+    	}
 
         var $panel = $("#cordova-root-panel");
         
