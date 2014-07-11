@@ -270,6 +270,8 @@ define(function (require, exports, module) {
 			    	isCordovaProject = true;
     			}
     		});
+    		//still not cordova? auto close!
+    		if(!isCordovaProject && panel) panel.hide();
     	});
     }
 
