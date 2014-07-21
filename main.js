@@ -263,13 +263,40 @@ define(function (require, exports, module) {
     	projectPath = root.fullPath;
     	$icon.removeClass("active").attr({title:"Not a Cordova Project"});
     	isCordovaProject = false;
+    	/*
+		Modified logic on Jul21:
+		So apparently, .cordova isn't made all the time, or most of the time. So I'll keep it
+		in, but I'm also going to use the logic of: if hooks, platforms, plugins, and www exist, it is cordova
+    	*/
+    	var hasCrap = { hasHooks: false, hasPlatforms: false, hasPlugins: false, hasWWW:false };
+
     	root.getContents(function(err,entries) {
     		entries.forEach(function(entry) {
     			if(entry.isDirectory && entry.name === ".cordova") {
-			    	$icon.addClass("active").attr({title:"Cordova Project"});
 			    	isCordovaProject = true;
     			}
+    			if(entry.isDirectory && entry.name === "hooks") {
+    				hasCrap.hasHooks = true;
+    			}
+    			if(entry.isDirectory && entry.name === "platforms") {
+    				hasCrap.hasPlatforms = true;
+    			}
+    			if(entry.isDirectory && entry.name === "plugins") {
+    				hasCrap.hasPlugins = true;
+    			}
+    			if(entry.isDirectory && entry.name === "www") {
+    				hasCrap.hasWWW = true;
+    			}
     		});
+
+    		if(hasCrap.hasHooks && hasCrap.hasPlatforms && hasCrap.hasPlugins && hasCrap.hasWWW) {
+		    	isCordovaProject = true;
+    		}
+
+    		if(isCordovaProject) {
+    			$icon.addClass("active").attr({title:"Cordova Project"});
+    		}
+
     		//still not cordova? auto close!
     		if(!isCordovaProject && panel) panel.hide();
     	});

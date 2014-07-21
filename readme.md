@@ -21,6 +21,8 @@ You can install, and remove, plugins.
 
 History
 ===
+[7/21/2014] New support for checking for a Cordova project. Addresses #3
+
 [7/11/2014] Autoclose panel on change to non-Cordova project.
 
 [7/11/2014] Autocomplete for plugins. First release.
